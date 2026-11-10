@@ -479,7 +479,7 @@ async function regen(id,prompt){ const im=await db.images.get(id);if(!im)return;
 function step(n,s,x){ const e=$('s-'+n),t=e.querySelector('.time');clearInterval(e._t); e.className='step '+({run:'active',ok:'done',err:'error',skip:'skip'}[s]||''); e.querySelector('.dot').textContent={ok:'✓',err:'✕',skip:'—'}[s]||(ST.indexOf(n)+1); if(s==='idle'){e._0=0;t.textContent=''} else if(s==='run'){e._0=Date.now();e._t=setInterval(()=>t.textContent=((Date.now()-e._0)/1000).toFixed(1)+'s',200)} else t.textContent=(e._0&&s!=='skip'?((Date.now()-e._0)/1000).toFixed(1)+'s':'')+(x?(e._0&&s!=='skip'?' · ':'')+x:''); }
 async function run(){
   if(RUN.on)return;
-  const prompt=$('prompt').value.trim(),F=Math.max(1,+$('nF').value||60),M=Math.max(0,+$('nM').value||0),has=!!IMGF,skip=$('skip').checked;
+  const prompt=$('prompt').value.trim(),F=Math.max(1,+$('nF').value||60);let M=Math.max(0,+$('nM').value||0),has=!!IMGF,skip=$('skip').checked;
   if(!prompt&&!has)return toast('Prompt ou image requis','err');
   if(!KEYS.length){toast('Ajoutez vos clés API (🔑)','err');$('drawer').classList.add('on');return}
   ST.forEach(n=>step(n,'idle'));$('ana').classList.add('d-none');$('go').disabled=true;RUN.stop=false; let wp=null;
