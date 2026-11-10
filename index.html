@@ -99,6 +99,21 @@ summary{cursor:pointer;font:700 .68rem var(--mono);color:var(--acc2);padding:.2r
 #keys{min-height:150px;font:12px/1.5 var(--mono)}
 #toast{position:fixed;top:58px;left:50%;transform:translate(-50%,-140px);z-index:200;opacity:0;transition:.3s;background:#fff;border:1px solid var(--line);border-left:3px solid var(--acc);padding:.6rem 1rem;font:12px var(--mono);max-width:92vw}
 #toast.on{transform:translate(-50%,0);opacity:1}#toast.ok{border-left-color:var(--ok)}#toast.err{border-left-color:var(--bad)}
+
+<style>
+.chips{display:flex;flex-wrap:wrap;gap:.4rem;margin:.4rem 0}
+.chip{border:1px solid var(--line);background:#fff;font:.68rem var(--mono);padding:.35rem .7rem;cursor:pointer;user-select:none}
+.chip:hover{border-color:var(--acc);color:var(--acc)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip.style.on{background:var(--acc2);border-color:var(--acc2)}
+.chip.genre.on{background:#d1334a;border-color:#d1334a}
+.artist-picker{max-height:280px;overflow:auto;border:1px solid var(--line);padding:.6rem;background:#fff}
+.artist-item{display:flex;align-items:center;gap:.5rem;padding:.3rem .4rem;border-bottom:1px solid #f0f0f0;font:12px var(--mono);cursor:pointer}
+.artist-item:hover{background:#f8f9fb}
+.artist-item input{accent-color:var(--acc2)}
+.artist-item .cat{font-size:.58rem;padding:.1rem .35rem;border:1px solid var(--line);color:var(--ink3);text-transform:uppercase}
+.artist-item .st{color:var(--ink2);font-size:.62rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+</style>
 </style></head><body>
 <header id="top"><span class="logo">ART<i>//</i>STUDIO</span><span id="mode">NON CONFIGURÉ</span><span id="gstat">Ajoutez vos clés API (🔑)</span><span><span class="dot"></span>IndexedDB · <b id="usage">0 Mo</b></span><span id="clk"></span></header>
 <main class="container-xxl">
@@ -114,13 +129,35 @@ summary{cursor:pointer;font:700 .68rem var(--mono);color:var(--acc2);padding:.2r
 <div class="row g-2">
 <div class="col-6 col-md-3"><label class="lab">Artistes modernes</label><input type="number" id="nF" class="form-control" value="60" min="1" max="500"></div>
 <div class="col-6 col-md-3"><label class="lab">Mixes</label><input type="number" id="nM" class="form-control" value="30" min="0" max="500"></div>
-<div class="col-4 col-md-2"><label class="lab">Workers</label><select id="workers" class="form-select"><option>4</option><option>6</option><option selected>8</option><option>12</option><option>16</option></select></div>
+<div class="col-4 col-md-2"><label class="lab">Workers</label><select id="workers" class="form-select"><option>4</option><option selected>2</option><option>6</option><option>8</option><option>12</option><option>16</option></select></div>
 <div class="col-4 col-md-2"><label class="lab">Ratio</label><select id="ratio" class="form-select"><option value="9:16" selected>9:16</option><option>3:4</option><option>2:3</option><option>1:1</option><option>16:9</option></select></div>
 <div class="col-4 col-md-2"><label class="lab">Taille</label><select id="size" class="form-select"><option selected>1K</option><option>2K</option></select></div>
 </div>
+<label class="lab">🎨 1 · Choisis tes artistes manuellement (sinon tirage auto)</label>
+<div class="d-flex gap-2 flex-wrap mb-2">
+<input id="artistSearch" class="form-control form-control-sm" style="max-width:280px" placeholder="🔍 Rechercher un artiste : banksy, warhol...">
+<button class="btn btn-outline-dark btn-sm" id="selAll">✓ Tout sélectionner</button>
+<button class="btn btn-outline-dark btn-sm" id="selNone">✕ Tout désélectionner</button>
+<button class="btn btn-outline-dark btn-sm" id="selPhoto">📸 Seulement photo-réalistes</button>
+<span id="selCount" class="sub align-self-center">0 artiste sélectionné → tirage auto</span>
+</div>
+<div id="artistList" class="artist-picker"></div>
+<div class="sub mt-1">Astuce : coche 5-10 artistes pour un test, 30-60 pour un gros batch. Si tu n'en coches aucun, l'app tire au hasard dans le vivier.</div>
+
+<label class="lab">🎬 2 · Choisis ton / tes styles (cliquable, plusieurs possibles)</label>
+<div id="styleChips" class="chips"></div>
+
+<label class="lab">🎭 3 · Choisis ton / tes genres (cliquable, plusieurs possibles)</label>
+<div id="genreChips" class="chips"></div>
+
 <label class="lab">Vivier d'artistes modernes</label>
 <select id="pool" class="form-select"><option value="all" selected>Tous les modernes</option><option value="photo">Photo-réaliste / hyperréaliste — le plus proche d'une vraie photo</option><option value="photoportrait">Portraitistes photo-réalistes</option><option value="street">Street art / urbain</option><option value="pop">Pop / néo-pop</option><option value="contemporary">Contemporain / galerie</option></select>
 <div class="form-check mt-2"><input class="form-check-input" type="checkbox" id="keepFace" checked><label class="form-check-label" for="keepFace" style="font:11px var(--mono)">🧑 Garder le visage / l'identité de la photo</label></div>
+<label class="lab">Fidélité visage — à mettre à 90-100% pour un portrait</label>
+<select id="fidelity" class="form-select"><option value="100" selected>100% — Copie fidèle (même visage, même pose)</option><option value="85">85% — Fidèle + léger style</option><option value="70">70% — Style visible, visage reconnaissable</option><option value="50">50% — Style fort, visage approximatif</option></select>
+<div class="form-check mt-2"><input class="form-check-input" type="checkbox" id="photoStrict" checked><label class="form-check-label" for="photoStrict" style="font:11px var(--mono)">📸 Mode PHOTO STRICT — interdit peinture / cartoon / déformation (recommandé)</label></div>
+<div class="form-check mt-2"><input class="form-check-input" type="checkbox" id="noMixFace" checked><label class="form-check-label" for="noMixFace" style="font:11px var(--mono)">🚫 Pas de mixes sur les visages — mixes = déformation assurée</label></div>
+<div class="form-check mt-2"><input class="form-check-input" type="checkbox" id="autoRetry" checked><label class="form-check-label" for="autoRetry" style="font:11px var(--mono)">🔁 Re-essai auto des erreurs (3x, avec pause)</label></div>
 <button class="btn-go" id="go">LANCER LA GÉNÉRATION</button>
 <div id="status" class="status">Prêt. Configurez vos clés (🔑 en bas à droite).</div>
 <div class="mt-2" id="steps">
@@ -232,6 +269,70 @@ function pickModernArtists(n,pool){
   list=[...list].sort(()=>Math.random()-0.5);
   const out=[]; for(let i=0;i<n;i++){const a=list[i%list.length]; out.push({name:a.name,kind:'modern',style:a.style,cat:a.cat,variant:i>=list.length?Math.floor(i/list.length)+1:0});} return out;
 }
+
+// ===== NOUVEAU V3 : STYLES + GENRES + SELECTION MANUELLE =====
+const STYLES = [
+ {id:'cinema', label:'🎬 Cinéma', prompt:'Cinematic look: shot on 35mm / 85mm lens, shallow depth of field, film grain, dramatic lighting, movie still, anamorphic, color grading like a feature film.'},
+ {id:'graffiti', label:'🎨 Graffiti', prompt:'Graffiti / street mural style: spray paint, bold outlines, drips, layered tags, vibrant colors on a concrete wall, urban texture.'},
+ {id:'bd', label:'💬 Bande Dessinée', prompt:'Bande dessinee / comic book style: clear line (ligne claire), ink outlines, halftone dots, speech-bubble-ready framing, flat colors with strong blacks, European comics.'},
+ {id:'cartoon', label:'🤪 Cartoon', prompt:'Cartoon style: exaggerated proportions, big expressive eyes, bold outlines, saturated colors, playful, animated series look. WARNING: if Keep Face is ON, keep face geometry realistic, cartoon applies only to background and grading.'},
+ {id:'anime', label:'🇯🇵 Anime / Manga', prompt:'Anime / manga style: clean cel shading, large detailed eyes, dynamic hair, Japanese animation look.'},
+ {id:'noir', label:'🖤 Noir & Blanc', prompt:'Black and white photography: high contrast, deep blacks, film grain, timeless.'},
+ {id:'vintage', label:'📻 Vintage / Rétro', prompt:'Vintage look: 70s / 80s film photo, faded colors, grain, retro wardrobe and set, nostalgic.'},
+ {id:'neon', label:'🌃 Néon / Cyberpunk', prompt:'Neon / cyberpunk: night city, neon signs pink/cyan, wet street reflections, futuristic mood.'},
+ {id:'aquarelle', label:'🎨 Aquarelle', prompt:'Watercolor: soft washes, paper texture, bleeding colors, artistic.'},
+ {id:'hyperreal', label:'📸 Hyperréaliste', prompt:'Hyperrealistic photograph: ultra detailed skin, pores, natural light, 85mm lens, indistinguishable from a real photo.'},
+ {id:'pop', label:'💥 Pop Art', prompt:'Pop art: bold flat colors, Ben-Day dots, high contrast, Warhol / Lichtenstein energy.'},
+ {id:'polaroid', label:'📷 Polaroid', prompt:'Polaroid photo: instant film, soft flash, white border feel, nostalgic snapshot.'},
+];
+const GENRES = [
+ {id:'horreur', label:'👻 Horreur', prompt:'Genre HORROR: dark atmosphere, fog, shadows, tense, unsettling, cold colors, fear, suspense. Keep the person recognisable, no gore on the face, no deformation.'},
+ {id:'policier', label:'🕵️ Policier / Thriller', prompt:'Genre POLICIER / THRILLER: detective mood, rain, night city, trench coat, neon, mystery, cinematic tension, film noir lighting.'},
+ {id:'action', label:'💥 Action', prompt:'Genre ACTION: dynamic pose, movement, explosion / chase energy in background, dramatic light, blockbuster movie still.'},
+ {id:'fantaisie', label:'🧚 Fantaisie / Fantasy', prompt:'Genre FANTASY: magical world, enchanted forest / castle / dragons in background, mystical light, epic, costumes, wonder.'},
+ {id:'superheros', label:'🦸 Super-Héros', prompt:'Genre SUPER-HEROS: heroic pose, cape / costume, dramatic sky, city in background, epic lighting, comic-book heroic framing. Keep the real face of the person.'},
+ {id:'scifi', label:'🚀 Science-Fiction', prompt:'Genre SCI-FI: futuristic city / spaceship, holograms, high-tech, cinematic sci-fi lighting.'},
+ {id:'western', label:'🤠 Western', prompt:'Genre WESTERN: desert, cowboy hat, dusty town, golden hour, western movie.'},
+ {id:'romance', label:'❤️ Romance', prompt:'Genre ROMANCE: warm soft light, golden hour, intimate, Paris / cafe / sunset, tender mood.'},
+ {id:'comedie', label:'😂 Comédie', prompt:'Genre COMEDY: funny, playful, bright colors, light-hearted, sitcom energy.'},
+ {id:'drame', label:'🎭 Drame', prompt:'Genre DRAMA: emotional, intimate, soft natural light, melancholic, deep storytelling.'},
+ {id:'historique', label:'🏛️ Historique', prompt:'Genre HISTORICAL: period costume, historical set, museum / palace, period-accurate atmosphere.'},
+ {id:'musical', label:'🎤 Musical / Pop Star', prompt:'Genre MUSICAL / POP STAR: stage, concert lights, microphone, crowd bokeh, star performance.'},
+];
+let SEL_STYLES=new Set(), SEL_GENRES=new Set(), SEL_ARTISTS=new Set();
+function renderChips(){
+  $('styleChips').innerHTML=STYLES.map(s=>`<span class="chip style ${SEL_STYLES.has(s.id)?'on':''}" data-style="${s.id}">${s.label}</span>`).join('');
+  $('genreChips').innerHTML=GENRES.map(g=>`<span class="chip genre ${SEL_GENRES.has(g.id)?'on':''}" data-genre="${g.id}">${g.label}</span>`).join('');
+  document.querySelectorAll('[data-style]').forEach(el=>el.onclick=()=>{ SEL_STYLES.has(el.dataset.style)?SEL_STYLES.delete(el.dataset.style):SEL_STYLES.add(el.dataset.style); renderChips(); });
+  document.querySelectorAll('[data-genre]').forEach(el=>el.onclick=()=>{ SEL_GENRES.has(el.dataset.genre)?SEL_GENRES.delete(el.dataset.genre):SEL_GENRES.add(el.dataset.genre); renderChips(); });
+}
+function renderArtistList(){
+  const q=($('artistSearch')?.value||'').toLowerCase();
+  const pool=$('pool')?.value||'all';
+  let list=MODERN_ARTISTS.filter((x,i,arr)=>arr.findIndex(y=>y.name===x.name)===i);
+  if(pool!=='all') list=list.filter(x=>x.cat===pool||(pool==='photo'&&(x.cat==='photo'||x.cat==='photoportrait')));
+  if(q) list=list.filter(x=>x.name.toLowerCase().includes(q)||(x.style||'').toLowerCase().includes(q));
+  $('artistList').innerHTML=list.map(a=>`<label class="artist-item"><input type="checkbox" data-artist="${a.name.replace(/"/g,'')}" ${SEL_ARTISTS.has(a.name)?'checked':''}><b>${a.name}</b><span class="cat">${a.cat}</span><span class="st">${(a.style||'').slice(0,80)}</span></label>`).join('')||'<div class="sub p-2">Aucun artiste — change de vivier ou efface la recherche.</div>';
+  document.querySelectorAll('[data-artist]').forEach(cb=>cb.onchange=()=>{ cb.checked?SEL_ARTISTS.add(cb.dataset.artist):SEL_ARTISTS.delete(cb.dataset.artist); updateSelCount(); });
+  updateSelCount();
+}
+function updateSelCount(){ const n=SEL_ARTISTS.size; $('selCount').textContent=n?`${n} artiste(s) sélectionné(s) — ce sont EUX qui seront utilisés`:`0 artiste sélectionné → tirage auto`; }
+function getStyleGenreBlock(){
+  const s=STYLES.filter(x=>SEL_STYLES.has(x.id)).map(x=>x.prompt).join('\n');
+  const g=GENRES.filter(x=>SEL_GENRES.has(x.id)).map(x=>x.prompt).join('\n');
+  let out='';
+  if(s) out+=`\n\nCHOSEN STYLE(S) - APPLY THESE ON TOP OF THE ARTIST STYLE (style affects lighting, background, grading, mood - NEVER the face geometry if Keep Face is ON):\n${s}`;
+  if(g) out+=`\n\nCHOSEN GENRE(S) - THE SCENE MUST BELONG TO THIS GENRE:\n${g}\nThe person stays the SAME PERSON, just placed in this genre universe (costume, set, lighting, atmosphere). Do NOT turn the person into a different character.`;
+  return out;
+}
+function getManualArtists(n){
+  if(!SEL_ARTISTS.size) return null;
+  const byName=new Map(); MODERN_ARTISTS.forEach(a=>{if(!byName.has(a.name)) byName.set(a.name,a)});
+  const arr=[...SEL_ARTISTS].map(name=>byName.get(name)).filter(Boolean);
+  const out=[]; for(let i=0;i<n;i++){ const a=arr[i%arr.length]; out.push({name:a.name,kind:'modern',style:a.style,cat:a.cat,variant:i>=arr.length?Math.floor(i/arr.length)+1:0}); }
+  return out;
+}
+
 const db=new Dexie('artstudio');
 db.version(1).stores({keys:'++id,&key',batches:'++id',artists:'++id,batch_id,&[batch_id+name]',images:'++id,batch_id,artist_id,parent_id,[batch_id+status]',blobs:'id'});
 let KEYS=[],CUR=0,IMGF=null,SETUP=false,KI=0,URLS=[],POLL=null;
@@ -253,7 +354,20 @@ function parseEssence(d){ const o={theme:'',composition:'',characters:'',style:'
 function styleBlock(a){
   const keep=$('keepFace')?.checked;
   const face=keep?`PRESERVE IDENTITY - Keep the exact same person from the reference photo: same face, same age, same hairstyle, same eyes, same expression, same pose. Do NOT beautify, age, swap or cartoonify the person. The result must still be recognisable as the same person in a real photo.`:'';
-  if(a.kind==='modern') return `STRICT STYLE - A FINISHED ORIGINAL ARTWORK in the style of ${a.name}, as if ${a.name} personally created this exact subject as a signed piece.\nStyle reference: ${a.style||''}.\nMedium: respect ${a.name}'s actual body of work (photo-realistic painting, hyperrealism, street mural, screenprint, pop serigraphy, contemporary painting, photographic portrait). Show its characteristic surface traces.\nAuthentic palette, technique, mark-making, lighting and composition of ${a.name}.\n${face}\nREAL PHOTO ANCHOR - The image must look like a REAL photograph / real artwork photographed in real light, not a cartoon or generic AI illustration. Natural skin texture, real shadows, real depth of field.`;
+  const fid=+$('fidelity')?.value||100;
+  const strict=$('photoStrict')?.checked;
+  const identity=`IDENTITY LOCK - NON-NEGOTIABLE, PRIORITY #1 OVER STYLE:
+- This is the SAME PERSON as the reference photo. Do NOT change identity.
+- Same face shape, same eyes (shape, colour, distance), same nose, same lips, same jawline, same ears, same forehead, same cheekbones.
+- Same age, same gender presentation, same skin tone, same moles / freckles / scars if visible.
+- Same hairstyle, same hair colour, same hairline. Same eyebrows.
+- Same expression, same head tilt, same pose, same framing.
+- FORBIDDEN: beautify, slim the face, enlarge eyes, whiten teeth, smooth skin into plastic, age up/down, swap face, make a generic beautiful person, cartoon, anime, 3D, doll, painting face.
+- If style and identity conflict, IDENTITY WINS. Reduce style to keep the face.
+- Skin must keep REAL texture: pores, fine lines, natural imperfections. No plastic / airbrushed skin.
+- Fidelity target: ${fid}% identical to reference face. ${fid>=90?'Almost a retouched copy of the same photo, only lighting/background/style changes slightly.':fid>=70?'Clearly recognisable as the same person, style visible but face intact.':'Style strong but person still recognisable.'}`;
+  const photoRule=strict?`PHOTO STRICT MODE: Output must be indistinguishable from a real photograph taken with a 85mm lens, f/2.0, natural light. NO painting, NO illustration, NO cartoon, NO 3D render, NO watercolor, NO oil paint texture on the face. The face is PHOTOGRAPHIC, not painted.`:`REAL PHOTO ANCHOR - Must look like a real photograph / real artwork photographed in real light. Natural skin texture, real shadows, real depth of field.`;
+  if(a.kind==='modern') return `STRICT STYLE - A FINISHED ORIGINAL ARTWORK in the style of ${a.name}, as if ${a.name} personally created this exact subject.\nStyle reference: ${a.style||''}.\n${identity}\n${photoRule}\nStyle applies to LIGHTING, BACKGROUND, COLOUR GRADING, WARDROBE and MOOD - NOT to the face geometry. Never redraw the face to fit the style.`;
   const m=a.mix_of||[];
   if(m.length>=3) return `STRICT STYLE - A FINISHED ORIGINAL ARTWORK merging the three distinct visual signatures of ${m[0]}, ${m[1]} and ${m[2]}.\nInterweave their authentic media, palettes, mark-making, lighting and composition into ONE unified hybrid style. Each artist must be visibly present.\n${face}\nResult: looks like a REAL PHOTOGRAPH / REAL MURAL PHOTOGRAPHED, not a cartoon.`;
   return 'STRICT STYLE - A FINISHED ORIGINAL ARTWORK, highly stylized illustration with strong visual identity, authentic medium, cinematic lighting, distinctive palette, well-composed like a genuine gallery piece. '+face;
@@ -264,7 +378,7 @@ function buildPrompt(a,user,desc){
   b=b.trim()||'Reinterpret the essence of the reference freely.';
   const ts=has?`\n\nOPTIONAL MINOR TEXT - rendered SMALL, discreet, integrated into the composition as a SECONDARY element only. Never a focal point. Max ~5% of the canvas area: "${t}"`:'';
   const tt=has?'Any text is small and integrated as a minor element - no banners, no overlays, no giant lettering.':'No text, no lettering, no typography.';
-  return styleBlock(a)+`\n\nREFERENCE ESSENCE - REINTERPRET FREELY through the artist's own vision. Do NOT copy the reference literally. Capture its essence and translate it entirely into the artist's visual language:\n`+b+ts+`\n\nTECHNICAL: full composition, well-balanced, museum-quality presentation. ${tt} No watermark, no signature, no frame, no border, no UI, no caption.`;
+  return styleBlock(a)+getStyleGenreBlock()+`\n\nREFERENCE ESSENCE - REINTERPRET FREELY through the artist's own vision. Do NOT copy the reference literally. Capture its essence and translate it entirely into the artist's visual language:\n`+b+ts+`\n\nTECHNICAL: full composition, well-balanced, museum-quality presentation. ${tt} No watermark, no signature, no frame, no border, no UI, no caption.`;
 }
 async function materialize(bid){
   const b=await db.batches.get(bid);if(!b)return 0; const u=(b.input_text||'').trim(),d=(b.image_desc||'').trim();if(!u&&!d)return 0;
@@ -285,7 +399,10 @@ async function expand(bid,want,target){
   if(cur>=target){await materialize(bid);return{total:cur,added:0,done:true}}
   const need=Math.min(want,target-cur+10);
   const have=new Set(existing.filter(a=>a.kind==='modern').map(a=>a.name.toLowerCase()));
-  const picks=pickModernArtists(need+20,pool).filter(p=>!have.has(p.name.toLowerCase()));
+  const manual=getManualArtists(need+20);
+  const picks=(manual||pickModernArtists(need+20,pool)).filter(p=>!have.has(p.name.toLowerCase()));
+  // Si sélection manuelle, on autorise les variantes (même artiste plusieurs fois avec styles/genres différents)
+  if(manual){ let add2=0; for(const p of manual){ if(add2>=need)break; try{await db.artists.add({batch_id:bid,name:p.variant?p.name+' (variante '+p.variant+')':p.name,kind:'modern',mix_of:null,style:p.style,cat:p.cat});add2++;}catch(e){} } await materialize(bid); return{total:cur+add2,added:add2,done:cur+add2>=target}; }
   let add=0; for(const p of picks){ if(add>=need)break; try{await db.artists.add({batch_id:bid,name:p.variant?p.name+' (variante '+p.variant+')':p.name,kind:'modern',mix_of:null,style:p.style,cat:p.cat});add++;}catch(e){} }
   await materialize(bid); return{total:cur+add,added:add,done:cur+add>=target};
 }
@@ -301,7 +418,14 @@ async function thumb(blob){ const bm=await createImageBitmap(blob),w=Math.min(TH
 async function processImg(im){
   refreshCell(im.id);
   try{
-    const b=RUN.b,d=await agnes('/images/generations',{model:IMG,prompt:im.prompt.slice(0,5000),size:b.size,ratio:b.ratio,extra_body:{response_format:'url'}},nextKey(),170000);
+    const b=RUN.b;
+    // Envoi de la photo d'origine comme référence image-to-image si le modèle la supporte.
+    // Si l'API l'ignore, le prompt IDENTITY LOCK prend le relais. On ne casse rien si elle est rejetée.
+    const payload={model:IMG,prompt:im.prompt.slice(0,5000),size:b.size,ratio:b.ratio,extra_body:{response_format:'url'}};
+    if(IMGF){ payload.image=IMGF; payload.extra_body.image=IMGF; payload.extra_body.reference_image=IMGF; }
+    let d=null,lastErr=null;
+    for(let attempt=0;attempt<3;attempt++){ try{ d=await agnes('/images/generations',payload,nextKey(),240000); break; }catch(e){ lastErr=e; if(e.code===429||String(e.message).includes('Timeout')) await sleep(4000*(attempt+1)); else if(attempt<2) await sleep(1500); else throw e; } }
+    if(!d) throw lastErr||new Error('Echec generation');
     let u=d.data?.[0]?.url;if(!u&&d.data?.[0]?.b64_json)u='data:image/png;base64,'+d.data[0].b64_json; if(!u)throw new Error('Pas d’URL');
     let full=null,remote=null;
     try{full=await (await fetch(u)).blob();if(full.size<100)throw new Error('image vide')}catch(e){if(u.startsWith('data:'))throw new Error('Image invalide');full=null;remote=u}
@@ -372,7 +496,7 @@ async function run(){
     step('artists','run');let cur=0,r=0,fails=0;
     while(cur<F&&r<10&&!RUN.stop){ setStatus(`Artistes modernes : ${cur}/${F} · générations en cours : ${VIEW.c?.running||0}`,'',1); try{const e=await expand(CUR,r?Math.min(80,F-cur+20):80,F);cur=e.total;r++;fails=0;if(e.done)break;if(!e.added)fails++;if(fails>=2)break} catch(e){fails++;r++;if(fails>=3)break;await sleep(1500)} }
     step('artists','ok',cur+' artistes');
-    if(M>0&&!RUN.stop){step('mixes','run');setStatus('Génération des mixes…','',1);await mixes(CUR,M);step('mixes','ok')}else step('mixes','skip');
+    if($('noMixFace')?.checked && $('keepFace')?.checked){ M=0; step('mixes','skip','désactivé pour protéger le visage'); } else if(M>0&&!RUN.stop){step('mixes','run');setStatus('Génération des mixes…','',1);await mixes(CUR,M);step('mixes','ok')}else step('mixes','skip');
     step('prompt','run');await materialize(CUR);const tot=(await counts()).total;step('prompt','ok',tot+' prompts'); $('binfo').textContent=`Batch #${CUR} · ${tot} images au total`;SETUP=false;await loadGallery();
   }catch(e){SETUP=false;RUN.stop=true;setStatus('✕ '+e.message,'err');toast(e.message,'err')}
   SETUP=false;if(wp)await wp.catch(()=>{}); setUi();const c=VIEW.c||{}; if(!$('status').classList.contains('err'))setStatus(RUN.stop?'⏹ Arrêté':`✓ Terminé — ${c.done||0} images`+(c.error?` · ${c.error} erreurs`:''),RUN.stop?'warn':'ok'); loadBatches();
@@ -391,6 +515,11 @@ async function handleImg(f){ if(!f||!f.type.startsWith('image/'))return; const u
 async function init(){
   navigator.storage?.persist?.();usage(); setInterval(()=>$('clk').textContent=new Date().toLocaleTimeString('fr-FR'),1000);
   KEYS=await db.keys.toArray();$('keys').value=KEYS.map(k=>k.key+(k.rpm!==10?' '+k.rpm:'')).join('\n');tag();
+  renderChips(); renderArtistList();
+  $('artistSearch').oninput=renderArtistList; $('pool').onchange=renderArtistList;
+  $('selAll').onclick=()=>{ document.querySelectorAll('[data-artist]').forEach(cb=>{cb.checked=true; SEL_ARTISTS.add(cb.dataset.artist)}); updateSelCount(); };
+  $('selNone').onclick=()=>{ SEL_ARTISTS.clear(); renderArtistList(); };
+  $('selPhoto').onclick=()=>{ SEL_ARTISTS.clear(); MODERN_ARTISTS.filter(a=>a.cat==='photo'||a.cat==='photoportrait').forEach(a=>SEL_ARTISTS.add(a.name)); $('pool').value='photo'; renderArtistList(); };
   $('keyBtn').onclick=()=>$('drawer').classList.toggle('on');$('kClose').onclick=()=>$('drawer').classList.remove('on');
   $('kSave').onclick=()=>saveKeys().catch(e=>toast(e.message,'err'));$('kTest').onclick=testKeys;$('keys').onblur=()=>saveKeys().catch(()=>{});
   $('imgIn').onchange=async e=>{if(e.target.files[0])await handleImg(e.target.files[0]);e.target.value=''};
